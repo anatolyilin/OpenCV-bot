@@ -105,7 +105,7 @@ def notfound():
 type = int(raw_input("1: Hue, 2: Sift, 3: ORB [1-3]: "))
 
 if int(type) == 1:
-    from huelib import *
+    from huelib2 import *
 elif int(type) == 2:
     from siftlib import *
 elif int(type) == 3:
@@ -123,11 +123,12 @@ speed =  0.2
 if int(type) == 1:
     obj = learnObject(True,20)
 else:
-    obj , kp1 , des1 = learnObject(False, 10)
+    obj , kp1 , des1 = learnObject(True, 40)
 
 # Follow
 notFound = 0
 while True:
+    dirangle = -1
     if int(type) == 1:
         dirangle = findObject(obj, iterations=1, show=True, computeHeading=True)
     else:

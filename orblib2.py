@@ -3,7 +3,7 @@ from picamera import PiCamera
 import time
 import cv2
 import numpy as np
-
+from drive import *
 
 def learnObject(show=True, counts=40):
     camera = PiCamera()
@@ -43,6 +43,8 @@ def learnObject(show=True, counts=40):
             cv2.imshow("Frame", image)
             key = cv2.waitKey(1) & 0xFF
         rawCapture.truncate(0)
+    # imageROI = cv2.imread("image_book.png")
+    # image = imageROI
 
     # based on the last frame, learn
     img1 = cv2.cvtColor(imageROI, cv2.COLOR_BGR2GRAY)
@@ -81,7 +83,6 @@ def getKpList(des1, des2, kp2, image=0):
     return list_kp2, image
 
 def findObject(orb, kp1, des1, iterations=1, warmup=0, show=False, computeHeading=False):
-
     angles = []
     list_kp2 = 0
     camera = PiCamera()

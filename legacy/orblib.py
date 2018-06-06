@@ -25,21 +25,14 @@ def learnObject(show=True, counts=40):
         if counter < counts:
             # cv2.rectangle(image, (80,80) ,(240,140), (0,255,0),3 )
             # imageROI = image[80:140, 80:240]
-            #
-            # a = 312 # x_min
-            # b = 712 # x_max
-            # c = 200 # y_min
-            # d = 440 # y_max
-            a = 200 # x_min
-            b = 400 # x_max
-            c = 312 # y_min
-            d = 712 # y_max
 
-            # cv2.rectangle(image, (260, 330), (380, 450), (0, 255, 0), 3)
-            # imageROI = image[330:450, 260:380]
-
-            cv2.rectangle(image, (c, a), (d, b), (0, 255, 0), 3)
-            imageROI = image[a:b, c:d]
+            x1 = 260
+            y1 = 280
+            x2 = 450
+            # x2 = 380
+            y2 = 450
+            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 3)
+            imageROI = image[y1:y2, x1:x2]
 
             text = str(counter) + "/" + str(counts)
             cv2.putText(image, text, (10, 55), cv2.FONT_HERSHEY_TRIPLEX, 2, (0, 255, 0), 4)
@@ -52,15 +45,24 @@ def learnObject(show=True, counts=40):
             cv2.imshow("Frame", image)
             key = cv2.waitKey(1) & 0xFF
         rawCapture.truncate(0)
-    # imageROI = cv2.imread("image_book.png")
-    # image = imageROI
 
     img1 = cv2.cvtColor(imageROI, cv2.COLOR_BGR2GRAY)
-    sift = cv2.xfeatures2d.SURF_create()
-    kp1, des1 = sift.detectAndCompute(img1, None)
+
+    orb = cv2.ORB_create(nfeatures=100000, scoreType=cv2.ORB_FAST_SCORE)
+    kp = orb.detect(img1, None)
+
+    # compute the descriptors with ORB
+    kp1, des1 = orb.compute(img1, kp)
+
+    img2 = cv2.drawKeypoints(img1,kp1,img1, color=(0,255,0), flags=0)
+    cv2.imshow("Frame", img2)
+    key = cv2.waitKey(0)
+
+    # sift = cv2.xfeatures2d.SURF_create()
+    # kp1, des1 = sift.detectAndCompute(img1, None)
     cv2.destroyAllWindows()
     camera.close()
-    return sift, kp1, des1
+    return orb, kp1, des1
 
 
 def findObject(sift, kp1, des1, iterations=2, OpenXwindowTimeout= 20, show=False, computeHeading=False, printing=False):
@@ -91,7 +93,15 @@ def findObject(sift, kp1, des1, iterations=2, OpenXwindowTimeout= 20, show=False
         if counter > OpenXwindowTimeout:
             if counter < iterations or iterations < 0:
                 img2 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                kp2, des2 = sift.detectAndCompute(img2, None)
+
+                kp3 = sift.detect(img2, None)
+                kp2, des2 = sift.compute(img2, kp3)
+                # kp2, des2 = sift.detectAndCompute(img2, None)
+
+                img3 = cv2.drawKeypoints(img2, kp3, img2, color=(0, 255, 0), flags=0)
+                cv2.imshow("Frame", img3)
+                key = cv2.waitKey(0)
+
                 matches = bf.knnMatch(des1, des2, k=2)
                 # good = []
                 list_kp2 = []
@@ -114,9 +124,15 @@ def findObject(sift, kp1, des1, iterations=2, OpenXwindowTimeout= 20, show=False
                         list_kp2.append(x2)
                         if show:
                             cv2.circle(image, (int(x2), int(y2)), 3, (0, 255, 0), -1)
-                            # image = cv2.drawMatchesKnn(img1,kp1,img2,kp2,good,image,flags=2)
+                            # image = cv2.drawMatchesKnn(image,kp1,img2,kp2,color=(0, 255, 0),flags=2)
+                            # image = cv2.drawKeypoints(img1, kp1, img2, color=(0, 255, 0), flags=0)
                         if printing:
                             print list_kp2[-1]
+                if computeHeading:
+                    print "----- ", counter, " ------ "
+                    print len(list_kp2)
+                    # print decodeToAngle(list_kp2)
+                    print "----- "
             else:
                 rawCapture.truncate(0)
                 break
@@ -129,11 +145,7 @@ def findObject(sift, kp1, des1, iterations=2, OpenXwindowTimeout= 20, show=False
         rawCapture.truncate(0)
 
     camera.close()
-
-    if computeHeading:
-        return list_kp2, str(decodeToAngle(list_kp2))
-
-    return list_kp2, str(-1)
+    return list_kp2
 
 
 def decodeToAngle(list_kp2):
